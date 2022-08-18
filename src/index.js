@@ -2,6 +2,8 @@ import {
     assertDirectoryWritable,
     assertFileReadable,
 } from '#Lib/assert-file.js';
+import createProgressBar from '#Lib/progress-bar.js';
+import { ProgressStream } from '#Lib/progress-stream.js';
 import { createReadStream, createWriteStream } from 'fs';
 import { unlink } from 'fs/promises';
 import { dirname, join } from 'path';
@@ -25,28 +27,37 @@ const bootstrap = async () => {
     await assertFileReadable(inputPathFile);
     await assertDirectoryWritable(outputPath);
 
+    const progressBar = await createProgressBar(inputPathFile);
+
     /** Streams de lectura, compresión y escritura */
     const readFileStream = createReadStream(inputPathFile);
+    const progressStream = new ProgressStream(progressBar);
     const gzipStream = createGzip({
         level: constants.Z_BEST_COMPRESSION,
     });
     const writeFileStream = createWriteStream(outputPathFile);
 
     /** Conectar los streams */
-    pipeline(readFileStream, gzipStream, writeFileStream, async (err) => {
-        if (err) {
-            try {
-                await unlink(outputPathFile);
-            } catch (err) {}
+    pipeline(
+        readFileStream,
+        progressStream,
+        gzipStream,
+        writeFileStream,
+        async (err) => {
+            if (err) {
+                try {
+                    await unlink(outputPathFile);
+                } catch (err) {}
 
-            console.log('Compression aborted, an error has ocurred', err);
-            process.exit(1);
-        } else {
-            console.log('Compression finished');
+                console.log('Compression aborted, an error has ocurred', err);
+                process.exit(1);
+            } else {
+                console.log('Compression finished');
 
-            process.exit();
+                process.exit();
+            }
         }
-    });
+    );
 };
 
 bootstrap();
