@@ -10,6 +10,7 @@ import { dirname, join } from 'path';
 import { pipeline } from 'stream';
 import { fileURLToPath } from 'url';
 import { createGzip, constants } from 'zlib';
+import { emitKeypressEvents } from 'readline';
 
 /** Crear rutas de entrada y salida */
 const inputFile = 'video.mp4';
@@ -37,6 +38,32 @@ const bootstrap = async () => {
     });
     const writeFileStream = createWriteStream(outputPathFile);
 
+    /** Acciones con el teclado */
+    const keyPressHandler = async (key) => {
+        if (key === '\u0003') {
+            try {
+                await unlink(outputPathFile);
+            } catch (err) {}
+
+            console.log('\nCompression aborted, finishing process...');
+            process.exit();
+        } else if (!gzipStream.isPaused() && key === 'p') {
+            gzipStream.pause();
+
+            console.clear();
+            console.log('Compression paused, press "r" to resume');
+        } else if (gzipStream.isPaused() && key === 'r') {
+            gzipStream.resume();
+
+            console.clear();
+            console.log('Compression in progress, press "p" to pause');
+        }
+    };
+
+    emitKeypressEvents(process.stdin);
+    process.stdin.setRawMode(true);
+    process.stdin.on('keypress', keyPressHandler);
+
     /** Conectar los streams */
     pipeline(
         readFileStream,
@@ -53,6 +80,9 @@ const bootstrap = async () => {
                 process.exit(1);
             } else {
                 console.log('Compression finished');
+
+                process.stdin.setRawMode(false);
+                process.stdin.off('keypress', keyPressHandler);
 
                 process.exit();
             }
