@@ -36,6 +36,7 @@
         "*.{js,md}": "prettier --write"
     },
     "dependencies": {
-        "cli-progress": "^3.11.2"
+        "cli-progress": "3.11.2",
+        "figlet": "1.5.2"
     }
 }

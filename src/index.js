@@ -11,6 +11,7 @@ import { pipeline } from 'stream';
 import { fileURLToPath } from 'url';
 import { createGzip, constants } from 'zlib';
 import { emitKeypressEvents } from 'readline';
+import createAsciiTitle from '#Lib/ascii-title.js';
 
 /** Crear rutas de entrada y salida */
 const inputFile = 'video.mp4';
@@ -25,8 +26,12 @@ const outputPath = join(dirname(fileURLToPath(import.meta.url)), '../out');
 const outputPathFile = join(outputPath, outputFile);
 
 const bootstrap = async () => {
+    await createAsciiTitle('Compressor');
+
     await assertFileReadable(inputPathFile);
     await assertDirectoryWritable(outputPath);
+
+    console.log('Compression in progress, press "p" to pause');
 
     const progressBar = await createProgressBar(inputPathFile);
 
