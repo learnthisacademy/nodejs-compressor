@@ -1,3 +1,4 @@
+import createAsciiTitle from '#Lib/ascii-title.js';
 import {
     assertDirectoryWritable,
     assertFileReadable,
@@ -7,11 +8,10 @@ import { ProgressStream } from '#Lib/progress-stream.js';
 import { createReadStream, createWriteStream } from 'fs';
 import { unlink } from 'fs/promises';
 import { dirname, join } from 'path';
+import { emitKeypressEvents } from 'readline';
 import { pipeline } from 'stream';
 import { fileURLToPath } from 'url';
-import { createGzip, constants } from 'zlib';
-import { emitKeypressEvents } from 'readline';
-import createAsciiTitle from '#Lib/ascii-title.js';
+import { constants, createGzip } from 'zlib';
 
 /** Crear rutas de entrada y salida */
 const inputFile = 'video.mp4';
@@ -50,6 +50,9 @@ const bootstrap = async () => {
                 await unlink(outputPathFile);
             } catch (err) {}
 
+            process.stdin.setRawMode(false);
+            process.stdin.off('keypress', keyPressHandler);
+
             console.log('\nCompression aborted, finishing process...');
             process.exit();
         } else if (!gzipStream.isPaused() && key === 'p') {
@@ -76,6 +79,9 @@ const bootstrap = async () => {
         gzipStream,
         writeFileStream,
         async (err) => {
+            process.stdin.setRawMode(false);
+            process.stdin.off('keypress', keyPressHandler);
+
             if (err) {
                 try {
                     await unlink(outputPathFile);
@@ -85,9 +91,6 @@ const bootstrap = async () => {
                 process.exit(1);
             } else {
                 console.log('Compression finished');
-
-                process.stdin.setRawMode(false);
-                process.stdin.off('keypress', keyPressHandler);
 
                 process.exit();
             }
